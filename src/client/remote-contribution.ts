@@ -4,16 +4,23 @@
  * DSH's `ctx.remote.<ns>` is normally populated by codegen artifacts imported
  * into the host's api-remotes bundle — which a third-party plugin can't join.
  * But `ctx.remote.$mount(contribution)` accepts a `TypertRemoteContribution`
- * ({ package, descriptors }) at runtime, and descriptors are plain objects. In
- * `src-json` codec mode (JSON-safe values, no generated schema) we can author
- * them by hand — no Typert compiler needed — mounting `usage` client-side so
- * the Settings panel can call `ctx.remote.usage.overview()/recent()/clear()`.
+ * ({ package, descriptors }) at runtime, and descriptors are plain objects, so
+ * we author them by hand — no Typert compiler needed — mounting `usage`
+ * client-side so the Settings panel can call `ctx.remote.usage.*`.
+ *
+ * The CLIENT gateway requires STRICT codecs (a zod schema with `.parse`) for
+ * params and results (src-json is host-only), so we supply permissive
+ * pass-through schemas: validation is not our safety boundary here (the host
+ * already validates), we just need a `.parse` the client accepts.
  */
+import { z } from "zod";
 
-/** src-json codec: JSON in, JSON out, no structural schema. */
-const srcJson = { mode: "src-json" as const };
+/** Strict codec with a permissive pass-through schema (client requires `.parse`). */
+function strict(typeSymbol: string) {
+  return { mode: "strict" as const, typeSymbol, schema: z.any() };
+}
 
-/** One direct method with a single JSON `request` arg and a JSON result. */
+/** One direct method with a single JSON `request` arg (optional) and a JSON result. */
 function method(pkg: string, ns: string, name: string, hasArg: boolean) {
   return {
     id: `${pkg}#${ns}/${name}`,
@@ -22,9 +29,9 @@ function method(pkg: string, ns: string, name: string, hasArg: boolean) {
     method: name,
     invocation: { kind: "direct" as const },
     parameters: hasArg
-      ? [{ name: "request", wire: "request", source: "json" as const, codec: srcJson }]
+      ? [{ name: "request", wire: "request", source: "json" as const, codec: strict(`${pkg}#${name}Request`) }]
       : [],
-    result: srcJson,
+    result: strict(`${pkg}#${name}Result`),
   };
 }
 
