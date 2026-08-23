@@ -45,12 +45,33 @@ function initState(): SessionUsageState {
 
 /** Pure fold: apply one session event, finalizing a record on step end. */
 export function applySessionUsage(state: SessionUsageState, event: SessionEvent): SessionUsageState {
-  const result = applyEvent(state.turn, event as { type: string; data?: any });
-  if (result !== "flush") return state;
+  try {
+    return foldSessionUsageEvent(state, event);
+  } catch {
+    // A projection MUST never break the turn it observes — on any unexpected
+    // event shape, keep the prior state (same reference = zero downstream work).
+    return state;
+  }
+}
 
-  const entry = finalizeEntry(state.turn, "session", {});
-  const nextTurn = initTurnState();
-  if (!entry) return { ...state, turn: nextTurn };
+/** The actual pure fold (wrapped by applySessionUsage's safety net). */
+function foldSessionUsageEvent(state: SessionUsageState, event: SessionEvent): SessionUsageState {
+  // MUST be pure (the projection contract): never mutate `state`; return the
+  // SAME reference when the event doesn't change anything. Clone the turn
+  // accumulator before folding into it.
+  const nextTurn: TurnState = { ...state.turn };
+  const result = applyEvent(nextTurn, event as { type: string; data?: any });
+
+  if (result !== "flush") {
+    // Only the turn accumulator may have advanced; if nothing changed, keep the
+    // same state reference (zero downstream work per the contract).
+    if (turnEqual(nextTurn, state.turn)) return state;
+    return { totals: state.totals, recent: state.recent, turn: nextTurn };
+  }
+
+  const entry = finalizeEntry(nextTurn, "session", {});
+  const freshTurn = initTurnState();
+  if (!entry) return { totals: state.totals, recent: state.recent, turn: freshTurn };
 
   const totals: UsageTotals = {
     promptTokens: state.totals.promptTokens + entry.promptTokens,
@@ -66,7 +87,21 @@ export function applySessionUsage(state: SessionUsageState, event: SessionEvent)
     ...state.recent,
   ].slice(0, 50);
 
-  return { totals, recent, turn: nextTurn };
+  return { totals, recent, turn: freshTurn };
+}
+
+/** Shallow-equal two turn accumulators (all fields are primitives). */
+function turnEqual(a: TurnState, b: TurnState): boolean {
+  return a.promptTokens === b.promptTokens
+    && a.completionTokens === b.completionTokens
+    && a.reasoningTokens === b.reasoningTokens
+    && a.cacheReadTokens === b.cacheReadTokens
+    && a.cacheCreationTokens === b.cacheCreationTokens
+    && a.costUsd === b.costUsd
+    && a.model === b.model
+    && a.provider === b.provider
+    && a.baseUrl === b.baseUrl
+    && a.finishReason === b.finishReason;
 }
 
 /** A permissive schema shim (parse passthrough) so we need no zod dependency. */
