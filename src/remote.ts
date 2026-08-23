@@ -40,8 +40,6 @@ export class UsageStoreService extends TypertRemoteService {
   protected async [Service.init](): Promise<void> {
     const domain = await (this.ctx as any).storageDomain.open(usageDomainSpec);
     this.sink = new DurableUsageSink(domain.table("records"));
-    // eslint-disable-next-line no-console
-    console.log(`[usage-tracker] store opened: ${this.sink.all().length} records on disk`);
     this.ctx.effect(() => async () => { await domain.close(); }, "usage-tracker.domainClose");
   }
 
@@ -54,8 +52,6 @@ export class UsageStoreService extends TypertRemoteService {
       groupBy: request.groupBy ?? "source",
       excludeEstimated: request.excludeEstimated,
     };
-    // eslint-disable-next-line no-console
-    console.log(`[usage-tracker] overview() called: sink=${!!this.sink} all=${this.sink?.all().length ?? 0} filter=${JSON.stringify(filter)}`);
     return this.sink ? this.sink.overview(filter) : emptyOverview();
   }
 

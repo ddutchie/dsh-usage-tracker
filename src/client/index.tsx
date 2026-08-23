@@ -3,6 +3,7 @@ import { UsagePanel } from "./UsagePanel.js";
 import { queryUsageOverview, queryRecent } from "../query.js";
 import type { UsageEntry, UsageOverview } from "../types.js";
 import type { SessionUsageView } from "../session-projection.js";
+import { usageRemoteContribution } from "./remote-contribution.js";
 
 export * from "./UsagePanel.js";
 
@@ -105,6 +106,14 @@ const UsageRemoteSection: React.FC<{
  */
 export function apply(ctx: any): void {
   if (ctx?.slots?.inject) {
+    // Mount the `usage` Remote namespace at runtime so ctx.remote.usage.* is
+    // callable (a third-party plugin can't join the host's compiled api-remotes
+    // import list, but $mount accepts a hand-authored src-json contribution).
+    let mounted = false;
+    try {
+      if (ctx.remote?.$mount) { void ctx.remote.$mount(usageRemoteContribution); mounted = true; }
+    } catch { /* remote unavailable — settings panel will show empty */ }
+
     // 1. Per-session tab (session kit → useProjection).
     ctx.slots.inject("conversation.view", () => ctx.slots.register({
       name: "conversation.view",
@@ -119,7 +128,7 @@ export function apply(ctx: any): void {
       id: "usage",
       order: 20,
       label: () => "Usage",
-      inject: () => ({ usage: ctx.remote?.usage }),
+      inject: () => ({ usage: mounted ? ctx.remote?.usage : undefined }),
     }, UsageRemoteSection));
     return;
   }
