@@ -25,9 +25,9 @@ export declare class UsageStoreService extends TypertRemoteService {
     /** Open the durable domain and own its lifecycle. */
     protected [Service.init](): Promise<void>;
     /** Lifetime/cross-session overview (totals, prior-window delta, per-day, per-model, by-dimension). */
-    overview(request?: UsageOverviewRequest): Promise<UsageOverview>;
+    overview(request: UsageOverviewRequest): Promise<UsageOverview>;
     /** Most-recent records across all sessions (newest first). */
-    recent(request?: UsageRecentRequest): Promise<UsageEntry[]>;
+    recent(request: UsageRecentRequest): Promise<UsageEntry[]>;
     /** Delete all stored usage. Returns the number of rows removed. */
     clear(): Promise<{
         cleared: number;

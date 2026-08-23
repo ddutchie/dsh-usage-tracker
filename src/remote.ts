@@ -45,20 +45,22 @@ export class UsageStoreService extends TypertRemoteService {
 
   /** Lifetime/cross-session overview (totals, prior-window delta, per-day, per-model, by-dimension). */
   @Remote("overview")
-  async overview(request: UsageOverviewRequest = {}): Promise<UsageOverview> {
+  async overview(request: UsageOverviewRequest): Promise<UsageOverview> {
+    const req = request ?? {};
     const filter: UsageFilter = {
-      from: request.from,
-      to: request.to,
-      groupBy: request.groupBy ?? "source",
-      excludeEstimated: request.excludeEstimated,
+      from: req.from,
+      to: req.to,
+      groupBy: req.groupBy ?? "source",
+      excludeEstimated: req.excludeEstimated,
     };
     return this.sink ? this.sink.overview(filter) : emptyOverview();
   }
 
   /** Most-recent records across all sessions (newest first). */
   @Remote("recent")
-  async recent(request: UsageRecentRequest = {}): Promise<UsageEntry[]> {
-    return this.sink ? this.sink.recent({}, request.limit ?? 50) : [];
+  async recent(request: UsageRecentRequest): Promise<UsageEntry[]> {
+    const limit = request && typeof request.limit === "number" ? request.limit : 50;
+    return this.sink ? this.sink.recent({}, limit) : [];
   }
 
   /** Delete all stored usage. Returns the number of rows removed. */
