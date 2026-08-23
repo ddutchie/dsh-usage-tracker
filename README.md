@@ -1,5 +1,7 @@
 # dsh-usage-tracker
 
+English | [中文](README.zh.md)
+
 Durable LLM **usage + cost tracking**, aggregation, and a usage panel for
 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) and any
 Cordis host.

@@ -43,6 +43,7 @@
     "lib/client/**/*.js",
     "lib/types/**/*.d.ts",
     "README.md",
+    "README.zh.md",
     "LICENSE"
   ],
   "dsh": {
