@@ -4,7 +4,8 @@ export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`:
  *  - `slots` for the conversation.view tab + settings.section registrations;
- *  - `remote` for the cross-session store RPC (`ctx.remote.usage.*`).
+ *  - `remote` for the RPC root, and `remote.usage` for the namespace child
+ *    service that `$mount` installs (Cordis inject-gates the mounted namespace).
  */
 export declare const inject: string[];
 /**
