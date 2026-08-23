@@ -86,8 +86,6 @@ const UsageRemoteSection: React.FC<{
     let alive = true;
     const now = Date.now();
     const from = now - 30 * 24 * 60 * 60 * 1000;
-    // eslint-disable-next-line no-console
-    console.log("[usage-tracker] settings panel: usage prop =", typeof props.usage, props.usage && Object.keys(props.usage));
     (async () => {
       try {
         const ovRes: any = await props.usage?.overview({ from, to: now, groupBy: "model" });
@@ -95,13 +93,8 @@ const UsageRemoteSection: React.FC<{
         // Remote methods resolve to a RemoteResult { ok, value } | { ok:false, error }.
         const ov: UsageOverview | undefined = ovRes && ovRes.ok ? ovRes.value : (ovRes?.totals ? ovRes : undefined);
         const rc: UsageEntry[] = rcRes && rcRes.ok ? (rcRes.value ?? []) : (Array.isArray(rcRes) ? rcRes : []);
-        // eslint-disable-next-line no-console
-        console.log("[usage-tracker] settings raw:", JSON.stringify(ovRes)?.slice(0, 200));
         if (alive) { setOverview(ov); setRecent(rc); }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error("[usage-tracker] settings remote call failed:", e);
-      }
+      } catch { /* store/remote unavailable — panel shows empty */ }
     })();
     return () => { alive = false; };
   }, [props.usage]);
