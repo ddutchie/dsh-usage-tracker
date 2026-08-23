@@ -65,10 +65,9 @@ export const UsagePanel: React.FC<UsagePanelProps> = ({ overview, recent, title 
   );
 
   const models = overview?.byModel ?? [];
-  const maxModelCost = Math.max(1, ...models.map((m) => m.costUsd || m.promptTokens));
 
   return (
-    <div style={{ fontFamily: "inherit", color: C.textPrimary, fontSize: "0.8rem" }}>
+    <div style={{ fontFamily: "inherit", color: C.textPrimary, fontSize: "0.8rem", padding: 20, maxWidth: 920 }}>
       <div style={{ fontWeight: 600, fontSize: "0.95rem", marginBottom: 12 }}>{title}</div>
 
       {/* Stat cards */}

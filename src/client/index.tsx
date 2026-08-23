@@ -25,8 +25,6 @@ const UsageSection: React.FC<{
   entries?: UsageEntry[];
   useUsage?: () => UsageEntry[];
   useProjection?: (key: string) => unknown;
-  /** Inject face (root/settings scope): pull the current session's usage view. */
-  getUsageView?: () => SessionUsageView | undefined;
 }> = (props) => {
   // Prefer the durable cross-session records if a host provides them.
   const hostEntries = props.useUsage ? props.useUsage() : props.entries;
@@ -38,13 +36,13 @@ const UsageSection: React.FC<{
   }
 
   // Otherwise read the current session's usage: via useProjection (session
-  // scope, e.g. the conversation.view tab) or via a getUsageView inject face
-  // (root scope, e.g. the settings section reading ctx.sessions).
-  const su = (props.useProjection?.("sessionUsage") as SessionUsageView | undefined) ?? props.getUsageView?.();
-  const overview: UsageOverview | undefined = su
-    ? { totals: su.totals, previous: null, series: [], byModel: [], byDimension: [] }
-    : undefined;
-  const recent: UsageEntry[] = (su?.recent ?? []).map((r, i) => ({
+  // Otherwise read the current session's usage via useProjection (the
+  // conversation.view tab is session-scoped, so it gets the session kit).
+  const su = props.useProjection?.("sessionUsage") as SessionUsageView | undefined;
+
+  // Reconstruct records from the projection's recent turns so the SAME
+  // aggregation (series/byModel) drives the charts as in the host-entries path.
+  const sessionEntries: UsageEntry[] = (su?.recent ?? []).map((r, i: number) => ({
     id: `${r.at}_${i}`,
     at: r.at,
     sessionId: "session",
@@ -56,48 +54,33 @@ const UsageSection: React.FC<{
     cacheCreationTokens: 0,
     costUsd: r.costUsd,
     costEstimated: r.costEstimated,
+    meta: { source: "session" },
   }));
-  return <UsagePanel overview={overview} recent={recent} title="LLM Usage (this session)" />;
+
+  // Totals come from the projection (authoritative running sum); series/byModel
+  // are aggregated from the recorded turns for the charts.
+  const agg = queryUsageOverview(sessionEntries, { groupBy: "model" });
+  const overview: UsageOverview | undefined = su
+    ? { totals: su.totals, previous: null, series: agg.series, byModel: agg.byModel, byDimension: agg.byDimension }
+    : undefined;
+  return <UsagePanel overview={overview} recent={sessionEntries.slice(0, 12)} title="LLM Usage (this session)" />;
 };
 
 /**
- * Client plugin body. Registers the Usage panel into the settings section slot.
- * Mutually-exclusive host paths (DSH slots vs a plain host `ui`) mirror the
- * dsh-context-ring widget, so no undeclared property is read off a Cordis proxy.
+ * Client plugin body. Registers the per-session Usage panel as a conversation
+ * view tab. (Cross-session/lifetime usage belongs in a root Settings panel, but
+ * that needs a durable sink + Remote — see README; for now this is per-session.)
  * @param ctx - the client context (DSH) or a host UI facade.
  */
 export function apply(ctx: any): void {
   if (ctx?.slots?.inject) {
-    // 1. A session-scoped conversation.view tab ("Usage") — this scope gets the
-    //    session kit (`useProjection`), reading the live sessionUsage projection.
+    // A session-scoped conversation.view tab ("Usage") — this scope gets the
+    // session kit (`useProjection`), reading the live sessionUsage projection.
     ctx.slots.inject("conversation.view", () => ctx.slots.register({
       name: "conversation.view",
       id: "usage",
       order: 30,
       label: () => "Usage",
-    }, UsageSection));
-
-    // 2. A root-scoped settings.section ("Usage") — settings sections don't get
-    //    useProjection, so an inject face reads the CURRENT session's usage
-    //    projection off ctx.sessions and hands it in as getUsageView().
-    ctx.slots.inject("settings.section", () => ctx.slots.register({
-      name: "settings.section",
-      id: "usage",
-      order: 20,
-      label: () => "Usage",
-      inject: () => ({
-        getUsageView: (): SessionUsageView | undefined => {
-          try {
-            const list: any = ctx.sessions?.list?.getSnapshot?.();
-            const currentId = list?.current ?? list?.selectedId ?? list?.currentId;
-            if (!currentId) return undefined;
-            const session = ctx.sessions?.binding?.(currentId)?.session;
-            return session?.projections?.faceOf?.("sessionUsage")?.getSnapshot?.() as SessionUsageView | undefined;
-          } catch {
-            return undefined;
-          }
-        },
-      }),
     }, UsageSection));
     return;
   }

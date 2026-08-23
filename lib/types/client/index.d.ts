@@ -1,6 +1,5 @@
 import React from "react";
 import type { UsageEntry } from "../types.js";
-import type { SessionUsageView } from "../session-projection.js";
 export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`. It registers
@@ -10,9 +9,9 @@ export * from "./UsagePanel.js";
  */
 export declare const inject: string[];
 /**
- * Client plugin body. Registers the Usage panel into the settings section slot.
- * Mutually-exclusive host paths (DSH slots vs a plain host `ui`) mirror the
- * dsh-context-ring widget, so no undeclared property is read off a Cordis proxy.
+ * Client plugin body. Registers the per-session Usage panel as a conversation
+ * view tab. (Cross-session/lifetime usage belongs in a root Settings panel, but
+ * that needs a durable sink + Remote — see README; for now this is per-session.)
  * @param ctx - the client context (DSH) or a host UI facade.
  */
 export declare function apply(ctx: any): void;
@@ -26,8 +25,6 @@ declare const _default: {
         entries?: UsageEntry[];
         useUsage?: () => UsageEntry[];
         useProjection?: (key: string) => unknown;
-        /** Inject face (root/settings scope): pull the current session's usage view. */
-        getUsageView?: () => SessionUsageView | undefined;
     }>;
 };
 export default _default;
