@@ -17,11 +17,13 @@ import type { Session, SessionEvent } from "@deepseek-ai/dsh-session";
 import type { UsageEntry, UsageSink, UsageTrackerConfig, UsageFilter, UsageOverview } from "./types.js";
 import { type TurnState, initTurnState, applyEvent, finalizeEntry } from "./capture.js";
 import { queryUsageOverview, queryRecent } from "./query.js";
+import { sessionUsageProjectionDefinition } from "./session-projection.js";
 
 export * from "./types.js";
 export * from "./pricing.js";
 export * from "./query.js";
 export * from "./capture.js";
+export * from "./session-projection.js";
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
@@ -127,4 +129,16 @@ export function usageTrackerPlugin(ctx: Context, config: UsageTrackerConfig = {}
  */
 export function apply(ctx: Context, config: UsageTrackerConfig = {}): void {
   usageTrackerPlugin(ctx, config);
+  // If the host provides session projections (DSH does), register the
+  // per-session usage unit so the client panel can read it via
+  // useProjection("sessionUsage") with zero extra host wiring. Inject-gated:
+  // a host without sessionProjections simply skips this (the capture service
+  // + sink still work).
+  (ctx as any).inject?.(["sessionProjections"], (c: any) => {
+    try {
+      c.sessionProjections.register(sessionUsageProjectionDefinition);
+    } catch {
+      /* projection registration is best-effort */
+    }
+  });
 }

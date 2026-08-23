@@ -19,6 +19,7 @@ export * from "./types.js";
 export * from "./pricing.js";
 export * from "./query.js";
 export * from "./capture.js";
+export * from "./session-projection.js";
 declare module "@deepseek-ai/cordis" {
     interface Context {
         usageTracker: UsageTrackerService;

@@ -96,3 +96,21 @@ describe("aggregation", () => {
     expect(queryRecent(rows).map((r) => r.at)).toEqual([3, 2, 1]);
   });
 });
+
+import { applySessionUsage, sessionUsageProjectionDefinition } from "../src/session-projection.js";
+
+describe("session usage projection", () => {
+  it("folds turns into per-session totals + recent", () => {
+    let s = sessionUsageProjectionDefinition.init();
+    s = applySessionUsage(s, { type: "request/header", data: { config: { model: "gpt-4o" } } } as any);
+    s = applySessionUsage(s, { type: "assistant/message", data: { message: { usage: { inputTokens: 1000, outputTokens: 100, cost: 0.5 } } } } as any);
+    s = applySessionUsage(s, { type: "assistant/message", data: { message: { usage: { inputTokens: 2000, outputTokens: 200, cost: 0.7 }, source: { model: "gpt-4o" } } } } as any);
+    const view = sessionUsageProjectionDefinition.wire.view(s);
+    expect(view.totals.requests).toBe(2);
+    expect(view.totals.promptTokens).toBe(3000);
+    expect(view.totals.completionTokens).toBe(300);
+    expect(view.totals.costUsd).toBeCloseTo(1.2, 5);
+    expect(view.recent[0].model).toBe("gpt-4o"); // newest first
+    expect(view.recent).toHaveLength(2);
+  });
+});

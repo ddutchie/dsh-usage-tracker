@@ -3,9 +3,9 @@ import type { UsageEntry } from "../types.js";
 export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`. It registers
- * a Usage settings section; `settings` provides the section slot. (The settings
- * slot itself is owned by `@deepseek-ai/dsh-client-ui-settings`, carried as the
- * `dsh.client.inject` load-order edge.)
+ * a Usage settings section; `slots` provides the section slot (declared by
+ * `@deepseek-ai/dsh-client-ui-settings`, carried as the `dsh.client.inject`
+ * load-order edge).
  */
 export declare const inject: string[];
 /**
@@ -24,6 +24,7 @@ declare const _default: {
     UsageSection: React.FC<{
         entries?: UsageEntry[];
         useUsage?: () => UsageEntry[];
+        useProjection?: (key: string) => unknown;
     }>;
 };
 export default _default;
