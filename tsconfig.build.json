@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declarationDir": "./lib/types"
+  },
+  "exclude": [
+    "src/client/**/*",
+    "src/react.ts",
+    "tests/**/*",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}
