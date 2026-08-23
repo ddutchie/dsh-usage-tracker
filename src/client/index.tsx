@@ -25,6 +25,8 @@ const UsageSection: React.FC<{
   entries?: UsageEntry[];
   useUsage?: () => UsageEntry[];
   useProjection?: (key: string) => unknown;
+  /** Inject face (root/settings scope): pull the current session's usage view. */
+  getUsageView?: () => SessionUsageView | undefined;
 }> = (props) => {
   // Prefer the durable cross-session records if a host provides them.
   const hostEntries = props.useUsage ? props.useUsage() : props.entries;
@@ -35,16 +37,12 @@ const UsageSection: React.FC<{
     return <UsagePanel overview={overview} recent={queryRecent(hostEntries, {}, 12)} title="LLM Usage (30 days)" />;
   }
 
-  // Otherwise read the current session's usage projection (DSH default).
-  const su = props.useProjection?.("sessionUsage") as SessionUsageView | undefined;
+  // Otherwise read the current session's usage: via useProjection (session
+  // scope, e.g. the conversation.view tab) or via a getUsageView inject face
+  // (root scope, e.g. the settings section reading ctx.sessions).
+  const su = (props.useProjection?.("sessionUsage") as SessionUsageView | undefined) ?? props.getUsageView?.();
   const overview: UsageOverview | undefined = su
-    ? {
-        totals: su.totals,
-        previous: null,
-        series: [],
-        byModel: [],
-        byDimension: [],
-      }
+    ? { totals: su.totals, previous: null, series: [], byModel: [], byDimension: [] }
     : undefined;
   const recent: UsageEntry[] = (su?.recent ?? []).map((r, i) => ({
     id: `${r.at}_${i}`,
@@ -70,16 +68,36 @@ const UsageSection: React.FC<{
  */
 export function apply(ctx: any): void {
   if (ctx?.slots?.inject) {
-    // A session-scoped conversation view tab ("Usage") — this scope receives
-    // the standard session kit (`useProjection`), so it can read the live
-    // per-session `sessionUsage` projection. (A root-scoped settings.section
-    // does NOT get useProjection; cross-session/durable history is the host
-    // sink + a Remote — see README.)
+    // 1. A session-scoped conversation.view tab ("Usage") — this scope gets the
+    //    session kit (`useProjection`), reading the live sessionUsage projection.
     ctx.slots.inject("conversation.view", () => ctx.slots.register({
       name: "conversation.view",
       id: "usage",
       order: 30,
       label: () => "Usage",
+    }, UsageSection));
+
+    // 2. A root-scoped settings.section ("Usage") — settings sections don't get
+    //    useProjection, so an inject face reads the CURRENT session's usage
+    //    projection off ctx.sessions and hands it in as getUsageView().
+    ctx.slots.inject("settings.section", () => ctx.slots.register({
+      name: "settings.section",
+      id: "usage",
+      order: 20,
+      label: () => "Usage",
+      inject: () => ({
+        getUsageView: (): SessionUsageView | undefined => {
+          try {
+            const list: any = ctx.sessions?.list?.getSnapshot?.();
+            const currentId = list?.current ?? list?.selectedId ?? list?.currentId;
+            if (!currentId) return undefined;
+            const session = ctx.sessions?.binding?.(currentId)?.session;
+            return session?.projections?.faceOf?.("sessionUsage")?.getSnapshot?.() as SessionUsageView | undefined;
+          } catch {
+            return undefined;
+          }
+        },
+      }),
     }, UsageSection));
     return;
   }

@@ -1,5 +1,6 @@
 import React from "react";
 import type { UsageEntry } from "../types.js";
+import type { SessionUsageView } from "../session-projection.js";
 export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`. It registers
@@ -25,6 +26,8 @@ declare const _default: {
         entries?: UsageEntry[];
         useUsage?: () => UsageEntry[];
         useProjection?: (key: string) => unknown;
+        /** Inject face (root/settings scope): pull the current session's usage view. */
+        getUsageView?: () => SessionUsageView | undefined;
     }>;
 };
 export default _default;

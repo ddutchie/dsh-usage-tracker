@@ -57,7 +57,8 @@ export function foldUsage(s: TurnState, u: any): void {
 export function applyEvent(s: TurnState, event: { type: string; data?: any }): "continue" | "flush" {
   const { type, data } = event;
   if (type === "request/header") {
-    const cfg = data?.config;
+    // dsh shape: data.header.config = { provider, model }.
+    const cfg = data?.header?.config ?? data?.config;
     if (cfg?.model) s.model = cfg.model;
     if (cfg?.provider) s.provider = cfg.provider;
     if (cfg?.baseUrl) s.baseUrl = cfg.baseUrl;
