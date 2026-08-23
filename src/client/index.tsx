@@ -10,10 +10,11 @@ export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`:
  *  - `slots` for the conversation.view tab + settings.section registrations;
- *  - `remote` for the RPC root, and `remote.usage` for the namespace child
- *    service that `$mount` installs (Cordis inject-gates the mounted namespace).
+ *  - `remote` for the RPC root. NOTE: we do NOT inject `remote.usage` — this
+ *    plugin MOUNTS that namespace itself via `$mount`, so gating `apply` on it
+ *    would deadlock (apply must run to create it). It's read lazily at call time.
  */
-export const inject = ["slots", "remote", "remote.usage"];
+export const inject = ["slots", "remote"];
 
 /**
  * A settings-section component that renders captured usage. Data source order:
@@ -107,15 +108,7 @@ const UsageRemoteSection: React.FC<{
  */
 export function apply(ctx: any): void {
   if (ctx?.slots?.inject) {
-    // Mount the `usage` Remote namespace at runtime so ctx.remote.usage.* is
-    // callable (a third-party plugin can't join the host's compiled api-remotes
-    // import list, but $mount accepts a hand-authored src-json contribution).
-    let mounted = false;
-    try {
-      if (ctx.remote?.$mount) { void ctx.remote.$mount(usageRemoteContribution); mounted = true; }
-    } catch { /* remote unavailable — settings panel will show empty */ }
-
-    // 1. Per-session tab (session kit → useProjection).
+    // 1. Per-session tab (session kit → useProjection). Always available.
     ctx.slots.inject("conversation.view", () => ctx.slots.register({
       name: "conversation.view",
       id: "usage",
@@ -123,14 +116,26 @@ export function apply(ctx: any): void {
       label: () => "Usage",
     }, UsageSection));
 
-    // 2. Cross-session Settings panel (Remote → durable store).
-    ctx.slots.inject("settings.section", () => ctx.slots.register({
-      name: "settings.section",
-      id: "usage",
-      order: 20,
-      label: () => "Usage",
-      inject: () => ({ usage: mounted ? ctx.remote?.usage : undefined }),
-    }, UsageRemoteSection));
+    // 2. Cross-session Settings panel (Remote → durable store). We MOUNT the
+    //    `usage` namespace ourselves (a third-party plugin can't join the host's
+    //    compiled api-remotes list), then register the settings section from a
+    //    child scope that injects `remote.usage` — so reading it is inject-safe
+    //    without deadlocking `apply` (which must run to create the namespace).
+    if (ctx.remote?.$mount) {
+      Promise.resolve(ctx.remote.$mount(usageRemoteContribution))
+        .then(() => {
+          ctx.inject?.(["slots", "remote.usage"], (c: any) => {
+            c.slots.inject("settings.section", () => c.slots.register({
+              name: "settings.section",
+              id: "usage",
+              order: 20,
+              label: () => "Usage",
+              inject: () => ({ usage: c.remote.usage }),
+            }, UsageRemoteSection));
+          });
+        })
+        .catch(() => { /* remote unavailable — per-session tab still works */ });
+    }
     return;
   }
   if (ctx?.slots?.register) {

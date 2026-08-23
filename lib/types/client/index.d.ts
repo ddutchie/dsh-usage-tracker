@@ -4,8 +4,9 @@ export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`:
  *  - `slots` for the conversation.view tab + settings.section registrations;
- *  - `remote` for the RPC root, and `remote.usage` for the namespace child
- *    service that `$mount` installs (Cordis inject-gates the mounted namespace).
+ *  - `remote` for the RPC root. NOTE: we do NOT inject `remote.usage` — this
+ *    plugin MOUNTS that namespace itself via `$mount`, so gating `apply` on it
+ *    would deadlock (apply must run to create it). It's read lazily at call time.
  */
 export declare const inject: string[];
 /**
