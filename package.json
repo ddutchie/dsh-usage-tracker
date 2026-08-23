@@ -33,14 +33,7 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "lib/index.js",
-    "lib/query.js",
-    "lib/pricing.js",
-    "lib/types.js",
-    "lib/capture.js",
-    "lib/react.js",
-    "lib/client.js",
-    "lib/client/**/*.js",
+    "lib/**/*.js",
     "lib/types/**/*.d.ts",
     "README.md",
     "README.zh.md",
@@ -50,7 +43,7 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-ui-settings"
+        "@deepseek-ai/dsh-client-ui-conversation"
       ]
     }
   },
