@@ -18,6 +18,18 @@
       "types": "./lib/types/pricing.d.ts",
       "default": "./lib/pricing.js"
     },
+    "./store": {
+      "types": "./lib/types/store.d.ts",
+      "default": "./lib/store.js"
+    },
+    "./sink": {
+      "types": "./lib/types/sink.d.ts",
+      "default": "./lib/sink.js"
+    },
+    "./remote": {
+      "types": "./lib/types/remote.d.ts",
+      "default": "./lib/remote.js"
+    },
     "./types": {
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types.js"
@@ -43,7 +55,8 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-ui-conversation"
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
   },
@@ -64,15 +77,22 @@
     "billing"
   ],
   "license": "MIT",
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "*",
     "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-storage-domain": "*",
+    "@deepseek-ai/dsh-typert-protocol": "*",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": { "optional": true },
     "@deepseek-ai/dsh-session": { "optional": true },
+    "@deepseek-ai/dsh-storage-domain": { "optional": true },
+    "@deepseek-ai/dsh-typert-protocol": { "optional": true },
     "react": { "optional": true },
     "react-dom": { "optional": true }
   },

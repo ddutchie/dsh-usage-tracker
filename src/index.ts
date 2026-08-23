@@ -18,12 +18,16 @@ import type { UsageEntry, UsageSink, UsageTrackerConfig, UsageFilter, UsageOverv
 import { type TurnState, initTurnState, applyEvent, finalizeEntry } from "./capture.js";
 import { queryUsageOverview, queryRecent } from "./query.js";
 import { sessionUsageProjectionDefinition } from "./session-projection.js";
+import { usageStorePlugin } from "./remote.js";
 
 export * from "./types.js";
 export * from "./pricing.js";
 export * from "./query.js";
 export * from "./capture.js";
 export * from "./session-projection.js";
+export * from "./sink.js";
+export * from "./store.js";
+export * from "./remote.js";
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
@@ -136,4 +140,12 @@ export function usageTrackerPlugin(ctx: Context, config: UsageTrackerConfig = {}
  */
 export function apply(ctx: Context, config: UsageTrackerConfig = {}): void {
   usageTrackerPlugin(ctx, config);
+  // Mount the durable, Remote-exposed store. Its `static inject =
+  // ["storageDomain"]` gates activation until the host provides storageDomain
+  // (DSH does), so a host without it simply never activates the store while the
+  // per-session projection + in-memory sink keep working. When the host wired
+  // its own sink, it owns persistence — skip the built-in store.
+  if (!config.sink) {
+    usageStorePlugin(ctx);
+  }
 }

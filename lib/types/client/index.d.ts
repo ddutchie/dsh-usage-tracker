@@ -1,5 +1,5 @@
 import React from "react";
-import type { UsageEntry } from "../types.js";
+import type { UsageEntry, UsageOverview } from "../types.js";
 export * from "./UsagePanel.js";
 /**
  * Client services this browser plugin reads off the client `ctx`. It registers
@@ -9,9 +9,11 @@ export * from "./UsagePanel.js";
  */
 export declare const inject: string[];
 /**
- * Client plugin body. Registers the per-session Usage panel as a conversation
- * view tab. (Cross-session/lifetime usage belongs in a root Settings panel, but
- * that needs a durable sink + Remote — see README; for now this is per-session.)
+ * Client plugin body. Registers TWO surfaces:
+ *  - a session-scoped conversation.view "Usage" tab (live per-session, via the
+ *    sessionUsage projection);
+ *  - a root settings.section "Usage" panel (cross-session/lifetime, via the
+ *    durable store over ctx.remote.usage.*).
  * @param ctx - the client context (DSH) or a host UI facade.
  */
 export declare function apply(ctx: any): void;
@@ -25,6 +27,18 @@ declare const _default: {
         entries?: UsageEntry[];
         useUsage?: () => UsageEntry[];
         useProjection?: (key: string) => unknown;
+    }>;
+    UsageRemoteSection: React.FC<{
+        usage?: {
+            overview: (req?: {
+                from?: number;
+                to?: number;
+                groupBy?: string;
+            }) => Promise<UsageOverview>;
+            recent: (req?: {
+                limit?: number;
+            }) => Promise<UsageEntry[]>;
+        };
     }>;
 };
 export default _default;
