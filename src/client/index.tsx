@@ -7,12 +7,11 @@ import type { SessionUsageView } from "../session-projection.js";
 export * from "./UsagePanel.js";
 
 /**
- * Client services this browser plugin reads off the client `ctx`. It registers
- * a Usage settings section; `slots` provides the section slot (declared by
- * `@deepseek-ai/dsh-client-ui-settings`, carried as the `dsh.client.inject`
- * load-order edge).
+ * Client services this browser plugin reads off the client `ctx`:
+ *  - `slots` for the conversation.view tab + settings.section registrations;
+ *  - `remote` for the cross-session store RPC (`ctx.remote.usage.*`).
  */
-export const inject = ["slots"];
+export const inject = ["slots", "remote"];
 
 /**
  * A settings-section component that renders captured usage. Data source order:

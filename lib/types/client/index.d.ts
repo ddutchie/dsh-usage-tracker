@@ -2,10 +2,9 @@ import React from "react";
 import type { UsageEntry, UsageOverview } from "../types.js";
 export * from "./UsagePanel.js";
 /**
- * Client services this browser plugin reads off the client `ctx`. It registers
- * a Usage settings section; `slots` provides the section slot (declared by
- * `@deepseek-ai/dsh-client-ui-settings`, carried as the `dsh.client.inject`
- * load-order edge).
+ * Client services this browser plugin reads off the client `ctx`:
+ *  - `slots` for the conversation.view tab + settings.section registrations;
+ *  - `remote` for the cross-session store RPC (`ctx.remote.usage.*`).
  */
 export declare const inject: string[];
 /**
