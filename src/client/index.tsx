@@ -86,12 +86,19 @@ const UsageRemoteSection: React.FC<{
     let alive = true;
     const now = Date.now();
     const from = now - 30 * 24 * 60 * 60 * 1000;
+    // eslint-disable-next-line no-console
+    console.log("[usage-tracker] settings panel: usage prop =", typeof props.usage, props.usage && Object.keys(props.usage));
     (async () => {
       try {
         const ov = await props.usage?.overview({ from, to: now, groupBy: "model" });
         const rc = await props.usage?.recent({ limit: 12 });
+        // eslint-disable-next-line no-console
+        console.log("[usage-tracker] settings overview() ->", ov && JSON.stringify(ov.totals), "recent:", rc?.length);
         if (alive) { setOverview(ov); setRecent(rc ?? []); }
-      } catch { /* store unavailable */ }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[usage-tracker] settings remote call failed:", e);
+      }
     })();
     return () => { alive = false; };
   }, [props.usage]);
