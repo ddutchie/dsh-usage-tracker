@@ -66,6 +66,13 @@ export class UsageTrackerService extends Service {
     ctx.on("session/event", (session: Session, event: SessionEvent) => {
       this.onEvent(session, event);
     });
+
+    // Register the per-session usage projection as an optional child (like
+    // token-meter). Done in the constructor so `inject` runs on the service's
+    // fiber scope; a composition without sessionProjections just skips it.
+    ctx.inject(["sessionProjections"], (projectionCtx: any) => {
+      projectionCtx.sessionProjections.register(sessionUsageProjectionDefinition);
+    });
   }
 
   private stateFor(id: string): TurnState {
@@ -129,16 +136,4 @@ export function usageTrackerPlugin(ctx: Context, config: UsageTrackerConfig = {}
  */
 export function apply(ctx: Context, config: UsageTrackerConfig = {}): void {
   usageTrackerPlugin(ctx, config);
-  // If the host provides session projections (DSH does), register the
-  // per-session usage unit so the client panel can read it via
-  // useProjection("sessionUsage") with zero extra host wiring. Inject-gated:
-  // a host without sessionProjections simply skips this (the capture service
-  // + sink still work).
-  (ctx as any).inject?.(["sessionProjections"], (c: any) => {
-    try {
-      c.sessionProjections.register(sessionUsageProjectionDefinition);
-    } catch {
-      /* projection registration is best-effort */
-    }
-  });
 }
